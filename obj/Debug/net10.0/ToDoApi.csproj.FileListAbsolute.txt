@@ -150,4 +150,5 @@ C:\Users\caioc\Downloads\ToDoApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagge
 C:\Users\caioc\Downloads\ToDoApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\caioc\Downloads\ToDoApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\caioc\Downloads\ToDoApi\bin\Debug\net10.0\ToDoApi.staticwebassets.runtime.json
-C:\Users\caioc\Downloads\ToDoApi\obj\Debug\net10.0\compressed\snyo2tx6jy-{0}-0zx1u5hyxt-0zx1u5hyxt.gz
+C:\Users\caioc\Downloads\ToDoApi\obj\Debug\net10.0\ToDoApi.sourcelink.json
+C:\Users\caioc\Downloads\ToDoApi\obj\Debug\net10.0\compressed\snyo2tx6jy-{0}-7agog5byzs-7agog5byzs.gz

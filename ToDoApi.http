@@ -27,3 +27,12 @@ DELETE http://localhost:5092/api/tasks/1
 
 ### Buscar tarefa por ID
 GET http://localhost:5092/api/tasks/2
+
+
+
+
+POST /api/auth/register
+{
+  "email": "teste@gmail.com",
+  "password": "123"
+}

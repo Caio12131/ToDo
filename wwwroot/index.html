@@ -2,43 +2,31 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>ToDo List</title>
+<title>ToDo App</title>
 
 <style>
-body {
-    font-family: Arial;
-    background: #f5f5f5;
-    padding: 30px;
-}
+body { font-family: Arial; background: #f5f5f5; }
 
 .container {
-    max-width: 500px;
-    margin: auto;
+    max-width: 400px;
+    margin: 50px auto;
     background: white;
     padding: 20px;
     border-radius: 10px;
 }
 
-h1 {
-    text-align: center;
-}
-
-input {
-    width: 70%;
+input, button {
+    width: 100%;
+    margin-top: 10px;
     padding: 10px;
-}
-
-button {
-    padding: 10px;
-    cursor: pointer;
 }
 
 .task {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
-    padding: 8px;
     background: #eee;
+    margin-top: 10px;
+    padding: 10px;
     border-radius: 5px;
 }
 
@@ -52,103 +40,284 @@ button {
 
 <body>
 
-<div class="container">
+<!-- LOGIN NORMAL -->
+<div class="container" id="auth">
+    <h2>Login</h2>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Senha">
 
-<h1>📋 Minhas Tarefas</h1>
+    <button onclick="login()">Entrar</button>
+    <button onclick="register()">Registrar</button>
 
-<input id="title" placeholder="Nova tarefa">
-<button onclick="addTask()">Adicionar</button>
+    <hr>
 
-<div id="taskList"></div>
+    <button onclick="showAdminLogin()">Área da Gerência</button>
+</div>
 
+<!-- LOGIN ADMIN -->
+<div class="container" id="adminLogin" style="display:none;">
+    <h2>Login Gerência</h2>
+
+    <input id="adminEmail" placeholder="Email">
+    <input id="adminPassword" type="password" placeholder="Senha">
+
+    <button onclick="loginAdmin()">Entrar</button>
+    <button onclick="backToAuth()">Voltar</button>
+</div>
+
+<!-- APP NORMAL -->
+<div class="container" id="app" style="display:none;">
+    <h2>Minhas Tarefas</h2>
+
+    <input id="title" placeholder="Nova tarefa">
+    <button onclick="addTask()">Adicionar</button>
+
+    <div id="taskList"></div>
+
+    <button onclick="logout()">Sair</button>
+</div>
+
+<!-- GERÊNCIA -->
+<div class="container" id="admin" style="display:none;">
+    <h2>Gerência</h2>
+
+    <h3>Criar novo gerente</h3>
+    <input id="newAdminEmail" placeholder="Email">
+    <input id="newAdminPass" placeholder="Senha">
+    <button onclick="createAdmin()">Criar Gerente</button>
+
+    <h3>Usuários</h3>
+    <div id="userList"></div>
+
+    <h3>Tarefas do usuário</h3>
+    <div id="adminTasks"></div>
+
+    <button onclick="logoutAdmin()">Sair</button>
 </div>
 
 <script>
 
-const apiUrl = "http://localhost:5092/api/tasks";
+const api = "http://localhost:5092/api";
+let user = null;
+
+// ===== TELAS =====
+
+function showAdminLogin() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("adminLogin").style.display = "block";
+}
+
+function backToAuth() {
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("auth").style.display = "block";
+}
+
+function showApp() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadTasks();
+}
+
+function showAdminPanel() {
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("admin").style.display = "block";
+    loadUsers();
+}
+
+// ===== LOGIN NORMAL =====
+
+async function register() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    await fetch(`${api}/auth/register`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password })
+    });
+
+    alert("Usuário criado!");
+}
+
+async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const res = await fetch(`${api}/auth/login`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password })
+    });
+
+    if (res.status === 401) {
+        alert("Login inválido");
+        return;
+    }
+
+    user = await res.json();
+    localStorage.setItem("user", JSON.stringify(user));
+
+    showApp();
+}
+
+// ===== LOGIN ADMIN =====
+
+async function loginAdmin() {
+    const email = document.getElementById("adminEmail").value;
+    const password = document.getElementById("adminPassword").value;
+
+    const res = await fetch(`${api}/auth/login`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password })
+    });
+
+    if (res.status === 401) {
+        alert("Login inválido");
+        return;
+    }
+
+    const adminUser = await res.json();
+
+    if (!adminUser.isAdmin) {
+        alert("Você não é gerente!");
+        return;
+    }
+
+    user = adminUser;
+    showAdminPanel();
+}
+
+// ===== TASKS =====
 
 async function loadTasks() {
-
-    const response = await fetch(apiUrl);
-    const tasks = await response.json();
+    const res = await fetch(`${api}/tasks/${user.id}`);
+    const tasks = await res.json();
 
     const list = document.getElementById("taskList");
     list.innerHTML = "";
 
-    tasks.forEach(task => {
-
+    tasks.forEach(t => {
         const div = document.createElement("div");
         div.className = "task";
 
-        if (task.isCompleted)
-            div.classList.add("completed");
+        if (t.isCompleted) div.classList.add("completed");
 
         div.innerHTML = `
-            <span onclick="toggleTask(${task.id}, '${task.title}', ${task.isCompleted})">
-                ${task.title}
-            </span>
-
-            <button onclick="deleteTask(${task.id})">
-                ❌
-            </button>
+            <span onclick="toggleTask(${t.id}, '${t.title}', ${t.isCompleted})">${t.title}</span>
+            <button onclick="deleteTask(${t.id})">❌</button>
         `;
 
         list.appendChild(div);
-
     });
 }
 
 async function addTask() {
+    const title = document.getElementById("title").value;
 
-    const titleInput = document.getElementById("title");
-
-    const task = {
-        title: titleInput.value,
-        isCompleted: false
-    };
-
-    await fetch(apiUrl, {
+    await fetch(`${api}/tasks`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(task)
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            title,
+            isCompleted: false,
+            userId: user.id
+        })
     });
-
-    titleInput.value = "";
 
     loadTasks();
 }
 
-async function toggleTask(id, title, isCompleted) {
-
-    const updatedTask = {
-        id: id,
-        title: title,
-        isCompleted: !isCompleted
-    };
-
-    await fetch(`${apiUrl}/${id}`, {
+async function toggleTask(id, title, done) {
+    await fetch(`${api}/tasks/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(updatedTask)
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            id,
+            title,
+            isCompleted: !done,
+            userId: user.id
+        })
     });
 
     loadTasks();
 }
 
 async function deleteTask(id) {
-
-    await fetch(`${apiUrl}/${id}`, {
+    await fetch(`${api}/tasks/${id}`, {
         method: "DELETE"
     });
 
     loadTasks();
 }
 
-loadTasks();
+// ===== ADMIN =====
+
+async function loadUsers() {
+    const res = await fetch(`${api}/auth/users`);
+    const users = await res.json();
+
+    const list = document.getElementById("userList");
+    list.innerHTML = "";
+
+    users.forEach(u => {
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+            <b>${u.email}</b>
+            <button onclick="viewTasks(${u.id})">Ver tarefas</button>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+async function viewTasks(userId) {
+    const res = await fetch(`${api}/tasks/user/${userId}`);
+    const tasks = await res.json();
+
+    const container = document.getElementById("adminTasks");
+    container.innerHTML = "";
+
+    tasks.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "task";
+        div.innerText = t.title;
+
+        container.appendChild(div);
+    });
+}
+
+async function createAdmin() {
+    const email = document.getElementById("newAdminEmail").value;
+    const password = document.getElementById("newAdminPass").value;
+
+    await fetch(`${api}/auth/register`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            email,
+            password,
+            isAdmin: true
+        })
+    });
+
+    alert("Gerente criado!");
+    loadUsers();
+}
+
+// ===== LOGOUT =====
+
+function logout() {
+    localStorage.removeItem("user");
+    user = null;
+    location.reload();
+}
+
+function logoutAdmin() {
+    user = null;
+    location.reload();
+}
 
 </script>
 

@@ -31,5 +31,20 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 // 🔹 ESSENCIAL — ativa Controllers
 app.MapControllers();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    if (!db.Users.Any(u => u.Email == "caio@gmail.com"))
+    {
+        db.Users.Add(new ToDoApi.Models.User
+        {
+            Email = "caio@gmail.com",
+            Password = "123123",
+            IsAdmin = true
+        });
+
+        db.SaveChanges();
+    }
+}
 app.Run();

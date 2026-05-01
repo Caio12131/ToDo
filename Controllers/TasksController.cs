@@ -24,15 +24,12 @@ namespace ToDoApi.Controllers
         }
 
         // GET: api/tasks/1
-        [HttpGet("{id}")]
-        public async Task<ActionResult<TaskItem>> GetTask(int id)
+        [HttpGet("{userId}")]
+        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks(int userId)
         {
-            var task = await _context.Tasks.FindAsync(id);
-
-            if (task == null)
-                return NotFound();
-
-            return task;
+            return await _context.Tasks
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
         }
 
         // POST: api/tasks
@@ -42,7 +39,7 @@ namespace ToDoApi.Controllers
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTasks), new { id = task.Id }, task);
+            return Ok(task);
         }
 
         // PUT: api/tasks/1
@@ -72,6 +69,13 @@ namespace ToDoApi.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+        [HttpGet("user/{userId}")]
+        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasksByUser(int userId)
+        {
+            return await _context.Tasks
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
         }
     }
 }
